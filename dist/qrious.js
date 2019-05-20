@@ -410,6 +410,31 @@
       for (i = 0; i < frame.width; i++) {
         for (j = 0; j < frame.width; j++) {
           if (frame.buffer[(j * frame.width) + i]) {
+            const radius = moduleSize/2;
+            const coordX = radius + (moduleSize * i) + offset;
+            const coordY = radius + (moduleSize * j) + offset;
+            context.beginPath();
+            context.arc(coordX,coordY,radius,0,Math.PI*2,true);
+            context.fill();
+          }
+        }
+      }
+
+      for (i = 0; i < frame.width; i++) {
+        for (j = 0; j < frame.width; j++) {
+          if (frame.eyes[(j * frame.width) + i] === 1) {
+            context.fillStyle = qrious.foreground;
+            const radius = moduleSize/2;
+            const coordX = radius + (moduleSize * i) + offset;
+            const coordY = radius + (moduleSize * j) + offset;
+            context.beginPath();
+            context.arc(coordX,coordY,radius,0,Math.PI*2,true);
+            context.fill();
+          } else if(frame.eyes[(j * frame.width) + i] === 2) {
+            context.fillStyle = qrious.foreground;
+            context.fillRect((moduleSize * i) + offset, (moduleSize * j) + offset, moduleSize, moduleSize);
+          } else if(frame.eyes[(j * frame.width) + i] === 3) {
+            context.fillStyle = qrious.eyesColor;
             context.fillRect((moduleSize * i) + offset, (moduleSize * j) + offset, moduleSize, moduleSize);
           }
         }
@@ -733,6 +758,7 @@
      * @memberof Frame#
      */
     this.buffer = Frame._createArray(width * width);
+    this.eyes = Frame._createArray(width * width);
 
     this._ecc = Frame._createArray(dataBlock + ((dataBlock + eccBlock) * (neccBlock1 + neccBlock2)) + neccBlock2);
     this._mask = Frame._createArray(((width * (width + 1)) + 1) / 2);
@@ -742,6 +768,7 @@
 
     // Insert single foreground cell.
     this.buffer[8 + (width * (width - 8))] = 1;
+    this.eyes[8 + (width * (width - 8))] = 1;
 
     this._insertTimingGap();
     this._reverseMask();
@@ -1306,6 +1333,7 @@
     _insertFinders: function() {
       var i, j, x, y;
       var buffer = this.buffer;
+      var eyes = this.eyes;
       var width = this.width;
 
       for (i = 0; i < 3; i++) {
@@ -1320,12 +1348,18 @@
         }
 
         buffer[y + 3 + (width * (j + 3))] = 1;
+        eyes[y + 3 + (width * (j + 3))] = 2;
 
         for (x = 0; x < 6; x++) {
           buffer[y + x + (width * j)] = 1;
           buffer[y + (width * (j + x + 1))] = 1;
           buffer[y + 6 + (width * (j + x))] = 1;
           buffer[y + x + 1 + (width * (j + 6))] = 1;
+
+          eyes[y + x + (width * j)] = 3;
+          eyes[y + (width * (j + x + 1))] = 3;
+          eyes[y + 6 + (width * (j + x))] = 3;
+          eyes[y + x + 1 + (width * (j + 6))] = 3;
         }
 
         for (x = 1; x < 5; x++) {
@@ -1340,6 +1374,11 @@
           buffer[y + 2 + (width * (j + x + 1))] = 1;
           buffer[y + 4 + (width * (j + x))] = 1;
           buffer[y + x + 1 + (width * (j + 4))] = 1;
+
+          eyes[y + x + (width * (j + 2))] = 2;
+          eyes[y + 2 + (width * (j + x + 1))] = 2;
+          eyes[y + 4 + (width * (j + x))] = 2;
+          eyes[y + x + 1 + (width * (j + 4))] = 2;
         }
       }
     },
@@ -2053,6 +2092,7 @@
     new Option_1('backgroundAlpha', true, 1, Utilities_1.abs),
     new Option_1('element'),
     new Option_1('foreground', true, 'black'),
+    new Option_1('eyesColor', true, 'black'),
     new Option_1('foregroundAlpha', true, 1, Utilities_1.abs),
     new Option_1('level', true, 'L', Utilities_1.toUpperCase),
     new Option_1('mime', true, 'image/png'),
@@ -2208,6 +2248,7 @@
    * @property {*} [element] - The element to be used to render the QR code which may either be an <code>canvas</code> or
    * <code>img</code>. The element(s) will be created if needed.
    * @property {string} [foreground="black"] - The foreground color to be applied to the QR code.
+   * @property {string} [eyesColor="black"] - The eyesColor color to be applied to the QR code.
    * @property {number} [foregroundAlpha=1] - The foreground alpha to be applied to the QR code.
    * @property {string} [level="L"] - The error correction level to be applied to the QR code.
    * @property {string} [mime="image/png"] - The MIME type to be used to render the image for the QR code.
